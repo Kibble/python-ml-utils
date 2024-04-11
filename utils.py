@@ -18,6 +18,8 @@ from sklearn.linear_model import LogisticRegression
 
 from typing import List
 
+DEFAULT = object()
+
 def calc_vif(X:pd.DataFrame):
     """
     Calculates the VIF scores for a feature DataFrame.
@@ -217,3 +219,41 @@ def create_model(model_enum: Model, params):
             kernel = params['kernel'] \
                 if 'kernel' in params else 'rbf'
             return SVC(kernel=kernel)
+
+def nn_compile(model, metrics):
+    model.compile(
+        loss='binary_crossentropy',
+        optimizer='adam',
+        metrics=metrics
+    )
+
+def nn_plot(fit_model):
+    history = pd.DataFrame(
+        fit_model.history, 
+        index=range(1, len(fit_model.history["loss"])+1)
+    )
+    history.plot()
+
+def nn_summary(model, hp=DEFAULT):
+    layer_name = []
+    neurons = []
+    activation = []
+
+    for i in range(0, len(model.layers)):
+        l = model.get_layer(index=i).get_config()
+        layer_name.append(l['name'])
+        neurons.append(l['units'])
+        activation.append(l['activation'])
+    
+    model_df = pd.DataFrame({
+        'Layer Name': layer_name,
+        'Neurons': neurons,
+        'Activation': activation
+    })
+
+    epochs = 'Hyperparameters not provided'
+    if hp is not DEFAULT:
+        epochs = hp.values['tuner/epochs']
+
+    return {'epochs': epochs, 'model': model_df}
+
